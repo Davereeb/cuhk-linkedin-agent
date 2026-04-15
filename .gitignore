@@ -1,0 +1,25 @@
+# API keys and secrets — never commit
+.env
+
+# Python virtual environment
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Generated content (user-specific, not code)
+post_log.json
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+venv/
+.env

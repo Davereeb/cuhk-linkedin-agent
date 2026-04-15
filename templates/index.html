@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APIB LinkedIn Post Generator</title>
+  <style>
+    /* ── Reset & base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple:       #4B2D7F;
+      --purple-dark:  #3a2263;
+      --purple-light: #6a4baa;
+      --gold:         #F0A500;
+      --gold-light:   #f7c34a;
+      --bg:           #f5f4f8;
+      --surface:      #ffffff;
+      --text:         #1a1a2e;
+      --muted:        #6b6b8a;
+      --border:       #e0dcea;
+      --radius:       10px;
+      --green:        #1e8c45;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--purple);
+      color: #fff;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .logo-mark {
+      width: 40px; height: 40px;
+      background: var(--gold);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px; color: var(--purple);
+      letter-spacing: -0.5px; flex-shrink: 0;
+    }
+    .header-titles h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; }
+    .header-titles p  { font-size: 11px; opacity: 0.75; }
+    .header-badge {
+      background: rgba(240,165,0,0.18);
+      border: 1px solid var(--gold);
+      color: var(--gold-light);
+      font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 600;
+    }
+
+    /* ── Layout ── */
+    main { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── Control card ── */
+    .control-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 4px rgba(75,45,127,0.06);
+    }
+    .topic-meta {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.75rem;
+    }
+    @media (max-width: 540px) { .topic-meta { grid-template-columns: 1fr; } }
+    .meta-block {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; padding: 1rem 1.25rem;
+    }
+    .meta-block label {
+      display: block; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 6px;
+    }
+    #next-topic-display { font-size: 15px; font-weight: 700; color: var(--purple); }
+    #recent-topics-display { font-size: 13px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .topic-chip {
+      background: rgba(75,45,127,0.08); border: 1px solid rgba(75,45,127,0.15);
+      color: var(--purple); border-radius: 20px; padding: 2px 10px; font-size: 12px; font-weight: 500;
+    }
+    .topic-chip.empty { color: var(--muted); background: none; border: 1px dashed var(--border); }
+
+    /* ── Mode toggle ── */
+    .mode-toggle { display: flex; gap: 8px; margin-bottom: 1rem; }
+    .mode-btn {
+      flex: 1; padding: 10px 16px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      border: 2px solid var(--border); background: var(--bg); color: var(--muted);
+      transition: all 0.2s;
+    }
+    .mode-btn.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+    .mode-btn:hover:not(.active) { border-color: var(--purple); color: var(--purple); }
+
+    /* ── History mode chips ── */
+    .mode-chip-tl {
+      background: rgba(29,111,165,0.1); border: 1px solid rgba(29,111,165,0.25);
+      color: #1d6fa5; border-radius: 20px; padding: 2px 10px; font-size: 10px; font-weight: 700;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .mode-chip-pp {
+      background: rgba(75,45,127,0.1); border: 1px solid rgba(75,45,127,0.25);
+      color: var(--purple); border-radius: 20px; padding: 2px 10px; font-size: 10px; font-weight: 700;
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* ── Generate button ── */
+    #generate-btn {
+      width: 100%; padding: 14px 24px;
+      background: var(--purple); color: #fff;
+      border: none; border-radius: var(--radius);
+      font-size: 15px; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, transform 0.1s; letter-spacing: 0.3px;
+    }
+    #generate-btn:hover:not(:disabled)  { background: var(--purple-dark); }
+    #generate-btn:active:not(:disabled) { transform: scale(0.99); }
+    #generate-btn:disabled              { opacity: 0.65; cursor: not-allowed; }
+
+    /* ── Loader ── */
+    .loader-wrap {
+      display: none; align-items: center; justify-content: center;
+      gap: 12px; padding: 1.5rem; color: var(--purple); font-size: 14px; font-weight: 500;
+    }
+    .loader-wrap.active { display: flex; }
+    .spinner {
+      width: 22px; height: 22px;
+      border: 3px solid rgba(75,45,127,0.2); border-top-color: var(--purple);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error banner ── */
+    #error-banner {
+      display: none; background: #fff0f0; border: 1px solid #f5c0c0;
+      color: #c0392b; border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-top: 1rem;
+    }
+    #error-banner.active { display: block; }
+
+    /* ── Results ── */
+    #results { display: none; }
+    #results.active { display: block; }
+
+    .results-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px;
+    }
+    .results-header h2 { font-size: 16px; font-weight: 700; color: var(--purple); }
+    .source-link { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .source-link:hover { color: var(--purple); text-decoration: underline; }
+
+    /* ── Output cards (shared) ── */
+    .output-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 1.25rem; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(75,45,127,0.05);
+    }
+    .output-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; background: rgba(75,45,127,0.04); border-bottom: 1px solid var(--border);
+    }
+    .output-card-header h3 {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.7px; color: var(--purple);
+    }
+    .gold-bar { width: 3px; height: 14px; background: var(--gold); border-radius: 2px; margin-right: 8px; flex-shrink: 0; }
+    .output-card-header-left { display: flex; align-items: center; }
+    .copy-btn {
+      padding: 5px 14px; background: transparent;
+      border: 1px solid var(--purple); color: var(--purple);
+      border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .copy-btn:hover { background: var(--purple); color: #fff; }
+    .copy-btn.copied { background: var(--green); border-color: var(--green); color: #fff; }
+    .output-text {
+      width: 100%; padding: 16px;
+      font-family: "Georgia", "Times New Roman", serif;
+      font-size: 14px; line-height: 1.75; color: var(--text);
+      background: transparent; border: none; resize: vertical; outline: none; min-height: 120px;
+    }
+    .output-text:focus { background: rgba(75,45,127,0.02); }
+    .hashtag-text { font-family: "Menlo","Consolas",monospace; font-size: 13px; line-height: 1.9; color: #1d6fa5; }
+    .keywords-list { display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+    .keyword-item { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .keyword-num {
+      width: 22px; height: 22px; background: var(--gold); color: var(--purple);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; flex-shrink: 0;
+    }
+
+    /* ── Topic switch notice ── */
+    #topic-switch-notice {
+      display: none; margin-bottom: 1rem;
+      background: rgba(240,165,0,0.08); border: 1px solid rgba(240,165,0,0.35);
+      border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: #7a5800;
+    }
+    #topic-switch-notice strong { color: #5a4000; }
+
+    /* ── Sources Found section ── */
+    #sources-section { margin-bottom: 1.25rem; }
+    .sources-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(30,140,69,0.1); border: 1px solid rgba(30,140,69,0.25);
+      color: var(--green); border-radius: 20px; font-size: 11px; font-weight: 700;
+      padding: 3px 10px; margin-left: 8px; vertical-align: middle;
+    }
+    .sources-dot { width: 7px; height: 7px; background: var(--green); border-radius: 50%; }
+    .verified-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(30,140,69,0.1); border: 1px solid rgba(30,140,69,0.3);
+      color: var(--green); border-radius: 20px; font-size: 11px; font-weight: 700;
+      padding: 3px 10px;
+    }
+    .unverified-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.4);
+      color: #8a6a00; border-radius: 20px; font-size: 11px; font-weight: 700;
+      padding: 3px 10px;
+    }
+    .serper-fallback-note {
+      padding: 10px 16px; font-size: 12px; color: #8a6a1a;
+      background: rgba(240,165,0,0.08); border-top: 1px solid rgba(240,165,0,0.2);
+    }
+    #sources-list { padding: 0 16px; }
+    .source-article { padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .source-article:last-child { border-bottom: none; }
+    .source-article-meta {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap;
+    }
+    .source-pub-chip {
+      background: rgba(75,45,127,0.08); border: 1px solid rgba(75,45,127,0.15);
+      color: var(--purple); border-radius: 20px; padding: 1px 9px; font-size: 11px; font-weight: 600;
+    }
+    .source-score-chip {
+      background: rgba(30,140,69,0.08); border: 1px solid rgba(30,140,69,0.2);
+      color: var(--green); border-radius: 20px; padding: 1px 8px; font-size: 10px; font-weight: 700;
+    }
+    .source-article-date { font-size: 11px; color: var(--muted); }
+    .source-article-title {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      text-decoration: none; display: block; margin-bottom: 4px; line-height: 1.4;
+    }
+    .source-article-title:hover { color: var(--purple); text-decoration: underline; }
+    .source-article-snippet { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+    /* ── Generated image card ── */
+    .image-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 1.25rem; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(75,45,127,0.05);
+    }
+    .image-card-body { padding: 16px; }
+    .generated-image {
+      width: 100%; border-radius: 6px; display: block;
+      aspect-ratio: 16/9; object-fit: cover; background: var(--bg);
+    }
+    .image-placeholder {
+      width: 100%; aspect-ratio: 16/9;
+      background: linear-gradient(135deg,rgba(75,45,127,0.08) 0%,rgba(240,165,0,0.08) 100%);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 13px; border: 1px dashed var(--border);
+    }
+    .canva-tip {
+      margin-top: 10px; font-size: 12.5px; color: var(--muted);
+      background: rgba(240,165,0,0.08); border: 1px solid rgba(240,165,0,0.3);
+      border-radius: 6px; padding: 8px 12px;
+    }
+    .image-download-btn {
+      display: inline-block; margin-top: 10px; padding: 6px 16px;
+      background: transparent; border: 1px solid var(--purple); color: var(--purple);
+      border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: background 0.15s, color 0.15s;
+    }
+    .image-download-btn:hover { background: var(--purple); color: #fff; }
+
+    /* ── History panel ── */
+    #history-panel {
+      margin-top: 2.5rem;
+      border-top: 2px solid var(--border);
+      padding-top: 2rem;
+    }
+    .history-panel-header {
+      display: flex; align-items: baseline; gap: 12px; margin-bottom: 1.25rem;
+    }
+    .history-panel-header h2 { font-size: 16px; font-weight: 700; color: var(--purple); }
+    #history-count-label { font-size: 12px; color: var(--muted); }
+
+    .history-entry {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+      box-shadow: 0 1px 3px rgba(75,45,127,0.04);
+    }
+    .history-entry-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 16px; cursor: pointer; gap: 12px;
+      transition: background 0.15s;
+    }
+    .history-entry-header:hover { background: rgba(75,45,127,0.03); }
+    .history-entry-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+    .history-topic-chip {
+      background: var(--purple); color: #fff;
+      border-radius: 20px; padding: 2px 10px; font-size: 11px; font-weight: 600;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .history-date { font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .history-source-label {
+      font-size: 11px; color: var(--purple); opacity: 0.7;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .history-entry-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .history-copy-btn {
+      padding: 4px 12px; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .history-copy-btn:hover { border-color: var(--purple); color: var(--purple); }
+    .history-copy-btn.copied { border-color: var(--green); color: var(--green); }
+    .expand-arrow {
+      font-size: 11px; color: var(--muted);
+      transition: transform 0.2s; display: inline-block; user-select: none;
+    }
+    .expand-arrow.open { transform: rotate(180deg); }
+    .history-entry-body {
+      display: none; border-top: 1px solid var(--border); padding: 0;
+    }
+    .history-entry-body.open { display: block; }
+    .history-body-text {
+      width: 100%; padding: 14px 16px;
+      font-family: "Georgia","Times New Roman",serif;
+      font-size: 13px; line-height: 1.75; color: var(--text);
+      background: rgba(75,45,127,0.01); border: none; resize: vertical; outline: none;
+      min-height: 80px;
+    }
+    .history-no-body {
+      padding: 14px 16px; font-size: 12px; color: var(--muted); font-style: italic;
+    }
+    #history-empty {
+      text-align: center; padding: 2rem;
+      font-size: 13px; color: var(--muted);
+      border: 1px dashed var(--border); border-radius: var(--radius);
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center; color: var(--muted); font-size: 12px;
+      padding: 2rem; border-top: 1px solid var(--border); margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="header-brand">
+    <div class="logo-mark">APIB</div>
+    <div class="header-titles">
+      <h1>LinkedIn Post Generator</h1>
+      <p>CUHK Business School — Executive Education</p>
+    </div>
+  </div>
+  <div class="header-badge">Serper + Qwen AI</div>
+</header>
+
+<!-- Main -->
+<main>
+
+  <!-- Control card -->
+  <div class="control-card">
+    <div class="topic-meta">
+      <div class="meta-block">
+        <label>This Week's Topic</label>
+        <div id="next-topic-display">{{ next_topic }}</div>
+      </div>
+      <div class="meta-block">
+        <label>Last 3 Topics</label>
+        <div id="recent-topics-display">
+          {% if recent_topics %}
+            {% for t in recent_topics %}<span class="topic-chip">{{ t }}</span>{% endfor %}
+          {% else %}
+            <span class="topic-chip empty">No history yet</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-tl" onclick="selectMode('thought_leadership')">🎓 Thought Leadership</button>
+      <button class="mode-btn" id="btn-pp" onclick="selectMode('programme_promotion')">📢 Programme Promotion</button>
+    </div>
+    <button id="generate-btn" onclick="generatePost()">Generate Thought Leadership Post</button>
+    <div class="loader-wrap" id="loader">
+      <div class="spinner"></div>
+      <span id="loader-text">Searching for recent sources...</span>
+    </div>
+    <div id="error-banner"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <!-- Topic switch notice -->
+    <div id="topic-switch-notice"></div>
+
+    <div class="results-header">
+      <h2 id="results-topic-label"></h2>
+      <a id="source-link" class="source-link" href="#" target="_blank" rel="noopener" style="display:none;"></a>
+    </div>
+
+    <!-- Sources Found -->
+    <div id="sources-section" class="output-card" style="display:none;">
+      <div class="output-card-header">
+        <div class="output-card-header-left">
+          <div class="gold-bar"></div>
+          <h3>Sources Found <span id="sources-badge"></span></h3>
+        </div>
+        <span id="verification-badge"></span>
+      </div>
+      <div id="sources-list"></div>
+      <div id="serper-fallback-note" class="serper-fallback-note" style="display:none;"></div>
+    </div>
+
+    <!-- Post Body -->
+    <div class="output-card">
+      <div class="output-card-header">
+        <div class="output-card-header-left">
+          <div class="gold-bar"></div>
+          <h3>Post Body</h3>
+        </div>
+        <button class="copy-btn" onclick="copySection('post-body-text', this)">Copy</button>
+      </div>
+      <textarea id="post-body-text" class="output-text" rows="12" readonly></textarea>
+    </div>
+
+    <!-- Hashtags -->
+    <div class="output-card">
+      <div class="output-card-header">
+        <div class="output-card-header-left">
+          <div class="gold-bar"></div>
+          <h3>Hashtags</h3>
+        </div>
+        <button class="copy-btn" onclick="copySection('hashtags-text', this)">Copy</button>
+      </div>
+      <textarea id="hashtags-text" class="output-text hashtag-text" rows="6" readonly></textarea>
+    </div>
+
+    <!-- Image Keywords -->
+    <div class="output-card">
+      <div class="output-card-header">
+        <div class="output-card-header-left">
+          <div class="gold-bar"></div>
+          <h3>Image Search Keywords</h3>
+        </div>
+        <button class="copy-btn" onclick="copyKeywords(this)">Copy All</button>
+      </div>
+      <div class="keywords-list" id="keywords-list"></div>
+    </div>
+
+    <!-- Generated Cover Image -->
+    <div class="image-card">
+      <div class="output-card-header">
+        <div class="output-card-header-left">
+          <div class="gold-bar"></div>
+          <h3>AI-Generated Cover Image</h3>
+        </div>
+        <span style="font-size:11px;color:var(--muted);">1280 × 720 · wanx-v1</span>
+      </div>
+      <div class="image-card-body">
+        <div id="image-container">
+          <div class="image-placeholder">Cover image will appear here after generation</div>
+        </div>
+        <div class="canva-tip" id="canva-tip" style="display:none;">
+          💡 Tip: Add CUHK logo and programme title in Canva before posting
+        </div>
+        <div id="image-error-msg" style="display:none;margin-top:10px;font-size:12px;color:#c0392b;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Panel -->
+  <section id="history-panel" style="display:none;">
+    <div class="history-panel-header">
+      <h2>Post History</h2>
+      <span id="history-count-label"></span>
+    </div>
+    <div id="history-list"></div>
+  </section>
+
+</main>
+
+<footer>
+  CUHK Business School &mdash; Asia-Pacific Institute of Business &mdash; Executive Education
+</footer>
+
+<script>
+  // ── Mode toggle ──────────────────────────────────────────────────────────────
+  let currentMode = "thought_leadership";
+
+  function selectMode(mode) {
+    currentMode = mode;
+    document.getElementById("btn-tl").classList.toggle("active", mode === "thought_leadership");
+    document.getElementById("btn-pp").classList.toggle("active", mode === "programme_promotion");
+    document.getElementById("generate-btn").textContent =
+      mode === "thought_leadership" ? "Generate Thought Leadership Post" : "Generate Programme Post";
+  }
+
+  // ── Loader ──────────────────────────────────────────────────────────────────
+  const loaderMessages = [
+    "Searching Serper for sources from the last 7 days...",
+    "Scanning McKinsey, PwC, HBR and more...",
+    "Verifying source freshness...",
+    "Passing articles to Qwen for post drafting...",
+    "Writing post in APIB style...",
+    "Generating cover image with Wanx AI...",
+    "Rendering cover image (this takes ~30s)...",
+    "Almost there..."
+  ];
+  let loaderInterval = null, loaderStep = 0;
+
+  function startLoader() {
+    loaderStep = 0;
+    document.getElementById("loader-text").textContent = loaderMessages[0];
+    loaderInterval = setInterval(() => {
+      loaderStep = (loaderStep + 1) % loaderMessages.length;
+      document.getElementById("loader-text").textContent = loaderMessages[loaderStep];
+    }, 4500);
+  }
+  function stopLoader() { clearInterval(loaderInterval); }
+
+  // ── Main generate flow ───────────────────────────────────────────────────────
+  async function generatePost() {
+    const btn         = document.getElementById("generate-btn");
+    const loader      = document.getElementById("loader");
+    const errorBanner = document.getElementById("error-banner");
+    const results     = document.getElementById("results");
+
+    btn.disabled = true;
+    loader.classList.add("active");
+    errorBanner.classList.remove("active");
+    results.classList.remove("active");
+    startLoader();
+
+    try {
+      const resp = await fetch("/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: currentMode })
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "Unknown error.");
+
+      // Topic meta
+      document.getElementById("next-topic-display").textContent = data.topic;
+      const recentDiv = document.getElementById("recent-topics-display");
+      if (data.recent_topics && data.recent_topics.length > 0) {
+        recentDiv.innerHTML = data.recent_topics
+          .map(t => `<span class="topic-chip">${escHtml(t)}</span>`).join("");
+      }
+
+      // Results header
+      document.getElementById("results-topic-label").textContent = `Generated: ${data.topic}`;
+      const srcLink = document.getElementById("source-link");
+      if (data.source_url && data.source_url !== "#") {
+        srcLink.href = data.source_url;
+        srcLink.textContent = data.source_title
+          ? `Source: ${truncate(data.source_title, 60)}` : "View source";
+        srcLink.style.display = "inline";
+      } else {
+        srcLink.style.display = "none";
+      }
+
+      // Topic switch notice + Sources Found section
+      renderTopicSwitchNotice(data);
+      renderSourcesSection(data.serper_sources || [], data.serper_error || "", data.source_verified);
+
+      // Post body, hashtags, keywords, image (unchanged logic)
+      document.getElementById("post-body-text").value = data.post_body || "";
+      document.getElementById("hashtags-text").value =
+        (Array.isArray(data.hashtags) ? data.hashtags : []).join("\n");
+
+      const kwList = document.getElementById("keywords-list");
+      kwList.innerHTML = (Array.isArray(data.image_keywords) ? data.image_keywords : [])
+        .map((kw, i) => `<div class="keyword-item"><span class="keyword-num">${i+1}</span><span>${escHtml(kw)}</span></div>`)
+        .join("");
+
+      const imgContainer = document.getElementById("image-container");
+      const canvaTip     = document.getElementById("canva-tip");
+      const imgErrMsg    = document.getElementById("image-error-msg");
+      if (data.image_url) {
+        imgContainer.innerHTML =
+          `<img class="generated-image" src="${escHtml(data.image_url)}"
+                alt="AI-generated cover for ${escHtml(data.topic)}" />
+           <a class="image-download-btn" href="${escHtml(data.image_url)}"
+              download target="_blank" rel="noopener">Download Image</a>`;
+        canvaTip.style.display = "block";
+        imgErrMsg.style.display = "none";
+      } else {
+        imgContainer.innerHTML = `<div class="image-placeholder">Image generation unavailable</div>`;
+        canvaTip.style.display = "none";
+        if (data.image_error) {
+          imgErrMsg.textContent = "Image generation failed: " + data.image_error;
+          imgErrMsg.style.display = "block";
+        }
+      }
+
+      results.classList.add("active");
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      // Refresh history panel
+      loadHistory();
+
+    } catch (err) {
+      errorBanner.textContent = "Error: " + err.message;
+      errorBanner.classList.add("active");
+    } finally {
+      stopLoader();
+      loader.classList.remove("active");
+      btn.disabled = false;
+    }
+  }
+
+  // ── Topic switch notice ──────────────────────────────────────────────────────
+  function renderTopicSwitchNotice(data) {
+    const el = document.getElementById("topic-switch-notice");
+    if (data.topic_switched && data.tried_topics && data.tried_topics.length > 1) {
+      const skipped = data.tried_topics.slice(0, -1).map(t => `<strong>${escHtml(t)}</strong>`).join(", ");
+      el.innerHTML =
+        `No qualifying sources found for ${skipped}. Auto-switched to <strong>${escHtml(data.topic)}</strong>.`;
+      el.style.display = "block";
+    } else {
+      el.style.display = "none";
+    }
+  }
+
+  // ── Sources Found renderer ───────────────────────────────────────────────────
+  function renderSourcesSection(sources, serperError, sourceVerified) {
+    const section      = document.getElementById("sources-section");
+    const list         = document.getElementById("sources-list");
+    const badge        = document.getElementById("sources-badge");
+    const vbadge       = document.getElementById("verification-badge");
+    const fallbackNote = document.getElementById("serper-fallback-note");
+
+    if (sources.length > 0) {
+      badge.innerHTML =
+        `<span class="sources-badge"><span class="sources-dot"></span>${sources.length} retrieved</span>`;
+
+      vbadge.innerHTML = sourceVerified
+        ? `<span class="verified-badge">Source pinned</span>`
+        : `<span class="unverified-badge">Source unverified</span>`;
+
+      list.innerHTML = sources.map(art => `
+        <div class="source-article">
+          <div class="source-article-meta">
+            <span class="source-pub-chip">${escHtml(art.source || "Unknown")}</span>
+            ${art.score !== undefined
+              ? `<span class="source-score-chip" title="${art.score_breakdown
+                  ? `Rel:${art.score_breakdown.relevance} Rec:${art.score_breakdown.recency} Auth:${art.score_breakdown.authority} Exec:${art.score_breakdown.exec} HK:${art.score_breakdown.asia}`
+                  : ""}">score ${art.score}</span>`
+              : ""}
+            <span class="source-article-date">${escHtml(art.date || "")}</span>
+          </div>
+          <a class="source-article-title" href="${escHtml(art.url)}" target="_blank" rel="noopener">${escHtml(art.title)}</a>
+          <p class="source-article-snippet">${escHtml(art.snippet || "")}</p>
+        </div>`).join("");
+
+      fallbackNote.style.display = "none";
+      section.style.display = "block";
+    } else {
+      badge.innerHTML = "";
+      vbadge.innerHTML = "";
+      list.innerHTML = "";
+      if (serperError) {
+        fallbackNote.textContent =
+          `Serper unavailable (${serperError}). Post generated using Qwen web search instead.`;
+        fallbackNote.style.display = "block";
+        section.style.display = "block";
+      } else {
+        section.style.display = "none";
+      }
+    }
+  }
+
+  // ── History panel ────────────────────────────────────────────────────────────
+  async function loadHistory() {
+    try {
+      const resp = await fetch("/history");
+      const entries = await resp.json();
+
+      const panel      = document.getElementById("history-panel");
+      const list       = document.getElementById("history-list");
+      const countLabel = document.getElementById("history-count-label");
+
+      if (!entries || entries.length === 0) {
+        panel.style.display = "none";
+        return;
+      }
+
+      panel.style.display = "block";
+      countLabel.textContent = `${entries.length} post${entries.length !== 1 ? "s" : ""} generated`;
+
+      list.innerHTML = entries.map((entry, idx) => {
+        const topicText    = escHtml(entry.topic || "Unknown topic");
+        const dateText     = escHtml(formatDate(entry.date || ""));
+        const sourceText   = entry.source_publication
+          ? escHtml(entry.source_publication + (entry.source_date ? " · " + entry.source_date : ""))
+          : "";
+        const hasBody      = entry.post_body && entry.post_body.trim().length > 0;
+        const bodyHtml     = hasBody
+          ? `<textarea class="history-body-text" readonly rows="10">${escHtml(entry.post_body)}</textarea>`
+          : `<div class="history-no-body">Post body not saved (generated before history tracking).</div>`;
+        const modeLabel    = entry.mode === "programme_promotion" ? "Programme" : "Thought Leadership";
+        const modeChipCls  = entry.mode === "programme_promotion" ? "mode-chip-pp" : "mode-chip-tl";
+
+        return `
+          <div class="history-entry" id="hentry-${idx}">
+            <div class="history-entry-header" onclick="toggleEntry(${idx})">
+              <div class="history-entry-left">
+                <span class="history-topic-chip">${topicText}</span>
+                <span class="${modeChipCls}">${modeLabel}</span>
+                <span class="history-date">${dateText}</span>
+                ${sourceText ? `<span class="history-source-label">${sourceText}</span>` : ""}
+              </div>
+              <div class="history-entry-right">
+                ${hasBody
+                  ? `<button class="history-copy-btn" onclick="copyHistoryEntry(event, this, ${idx})">Copy</button>`
+                  : ""}
+                <span class="expand-arrow" id="arrow-${idx}">&#9660;</span>
+              </div>
+            </div>
+            <div class="history-entry-body" id="hbody-${idx}">
+              ${bodyHtml}
+            </div>
+          </div>`;
+      }).join("");
+
+    } catch (err) {
+      console.warn("Failed to load history:", err);
+    }
+  }
+
+  function toggleEntry(idx) {
+    const body  = document.getElementById(`hbody-${idx}`);
+    const arrow = document.getElementById(`arrow-${idx}`);
+    const open  = body.classList.toggle("open");
+    arrow.classList.toggle("open", open);
+  }
+
+  function copyHistoryEntry(event, btn, idx) {
+    event.stopPropagation();
+    const ta = document.querySelector(`#hbody-${idx} .history-body-text`);
+    if (!ta) return;
+    navigator.clipboard.writeText(ta.value).then(() => {
+      btn.textContent = "Copied!";
+      btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+    });
+  }
+
+  // ── Copy helpers ─────────────────────────────────────────────────────────────
+  function copySection(textareaId, btn) {
+    const ta = document.getElementById(textareaId);
+    navigator.clipboard.writeText(ta.value).then(() => {
+      btn.textContent = "Copied!"; btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+    }).catch(() => { ta.select(); document.execCommand("copy"); });
+  }
+
+  function copyKeywords(btn) {
+    const items = document.querySelectorAll("#keywords-list .keyword-item span:last-child");
+    const text  = Array.from(items).map(el => el.textContent).join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = "Copied!"; btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy All"; btn.classList.remove("copied"); }, 2000);
+    });
+  }
+
+  // ── Utilities ────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  function truncate(str, n) { return str.length > n ? str.slice(0, n) + "..." : str; }
+  function formatDate(iso) {
+    if (!iso) return "";
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })
+        + " · "
+        + d.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" });
+    } catch { return iso; }
+  }
+
+  // Load history on page ready
+  document.addEventListener("DOMContentLoaded", loadHistory);
+</script>
+</body>
+</html>
