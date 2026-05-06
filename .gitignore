@@ -11,8 +11,15 @@ __pycache__/
 *.py[cod]
 *.pyo
 
-# Generated content (user-specific, not code)
+# Generated content and runtime state — user-specific, not code
 post_log.json
+custom_styles.json
+kol_rotation.json
+
+# Documents
+*.docx
+*.xlsx
+*.pdf
 
 # macOS
 .DS_Store

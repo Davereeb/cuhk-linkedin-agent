@@ -352,6 +352,93 @@
       border: 1px dashed var(--border); border-radius: var(--radius);
     }
 
+    /* ── Style selector ── */
+    .style-selector { margin-bottom: 1rem; }
+    .style-selector-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    #style-sel-hint { font-weight: 400; text-transform: none; letter-spacing: 0; }
+    .manage-styles-link {
+      font-size: 11px; font-weight: 600; color: var(--purple); text-decoration: none;
+      margin-left: auto; opacity: 0.75; text-transform: none; letter-spacing: 0;
+    }
+    .manage-styles-link:hover { opacity: 1; text-decoration: underline; }
+    .style-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .style-chip {
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 2px solid var(--border);
+      background: var(--bg); color: var(--muted); transition: all 0.15s;
+    }
+    .style-chip.active { background: var(--purple); color: #fff; border-color: var(--purple); }
+    .style-chip:hover:not(.active) { border-color: var(--purple); color: var(--purple); }
+
+    /* ── Custom style chips (gold, with delete ×) ── */
+    #custom-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .custom-style-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 6px 10px 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 2px solid var(--gold); background: var(--bg); color: #7a5800;
+      transition: all 0.15s; user-select: none;
+    }
+    .custom-style-chip.active { background: var(--gold); color: var(--purple); }
+    .custom-style-chip:hover:not(.active) { background: rgba(240,165,0,0.12); }
+    .chip-del {
+      font-size: 13px; line-height: 1; opacity: 0.55; cursor: pointer;
+      background: none; border: none; color: inherit; padding: 0;
+    }
+    .chip-del:hover { opacity: 1; color: #c0392b; }
+    .rename-input {
+      font-size: 12px; border: 1px solid var(--border); border-radius: 4px;
+      padding: 2px 6px; width: 90px; outline: none; background: var(--surface);
+    }
+    .rename-input:focus { border-color: var(--gold); }
+
+    /* ── Post pagination ── */
+    .post-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px; border-top: 1px solid var(--border);
+    }
+    .page-arrow {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 1.5px solid var(--border); background: var(--bg);
+      font-size: 16px; cursor: pointer; color: var(--purple);
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .page-arrow:hover { background: var(--purple); color: #fff; border-color: var(--purple); }
+    .page-info { text-align: center; }
+    .page-style-label {
+      display: block; font-size: 12px; font-weight: 700; color: var(--purple);
+    }
+    .page-counter { font-size: 11px; color: var(--muted); }
+
+    /* ── History sections ── */
+    .history-section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--muted);
+      padding: 12px 16px 4px; border-top: 1px solid var(--border);
+    }
+    .history-source-row {
+      display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+      padding: 6px 16px 12px;
+    }
+    .history-source-link {
+      font-size: 12.5px; font-weight: 600; color: var(--purple);
+      text-decoration: none; word-break: break-all; line-height: 1.4;
+    }
+    .history-source-link:hover { text-decoration: underline; }
+    .history-source-meta {
+      font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0;
+    }
+    .history-hashtags { padding-bottom: 4px; }
+    .history-image-wrap { padding: 0 16px 16px; }
+    .history-cover-img {
+      width: 100%; border-radius: 6px; display: block;
+      aspect-ratio: 16/9; object-fit: cover; background: var(--bg);
+    }
+
     /* ── Footer ── */
     footer {
       text-align: center; color: var(--muted); font-size: 12px;
@@ -398,6 +485,20 @@
       <button class="mode-btn active" id="btn-tl" onclick="selectMode('thought_leadership')">🎓 Thought Leadership</button>
       <button class="mode-btn" id="btn-pp" onclick="selectMode('programme_promotion')">📢 Programme Promotion</button>
     </div>
+
+    <!-- Style selector -->
+    <div class="style-selector">
+      <div class="style-selector-label">
+        Writing Style
+        <span id="style-sel-hint">— select up to 3</span>
+        <a href="/styles" class="manage-styles-link" target="_blank">Manage Styles →</a>
+      </div>
+      <div class="style-chips" id="style-chips">
+        <button class="style-chip active" data-style="original" onclick="toggleStyle('original')">Original</button>
+      </div>
+      <div id="custom-chips"></div>
+    </div>
+
     <button id="generate-btn" onclick="generatePost()">Generate Thought Leadership Post</button>
     <div class="loader-wrap" id="loader">
       <div class="spinner"></div>
@@ -430,16 +531,25 @@
       <div id="serper-fallback-note" class="serper-fallback-note" style="display:none;"></div>
     </div>
 
-    <!-- Post Body -->
+    <!-- Post Body (unified, paginated) -->
     <div class="output-card">
       <div class="output-card-header">
         <div class="output-card-header-left">
           <div class="gold-bar"></div>
           <h3>Post Body</h3>
         </div>
-        <button class="copy-btn" onclick="copySection('post-body-text', this)">Copy</button>
+        <button class="copy-btn" onclick="copyCurrentPost(this)">Copy</button>
       </div>
       <textarea id="post-body-text" class="output-text" rows="12" readonly></textarea>
+      <!-- Pagination bar — hidden when only 1 post -->
+      <div id="post-nav" class="post-nav" style="display:none;">
+        <button class="page-arrow" onclick="switchPost(-1)">&#8592;</button>
+        <div class="page-info">
+          <span id="page-style-label" class="page-style-label"></span>
+          <span id="page-counter" class="page-counter"></span>
+        </div>
+        <button class="page-arrow" onclick="switchPost(1)">&#8594;</button>
+      </div>
     </div>
 
     <!-- Hashtags -->
@@ -473,7 +583,7 @@
           <div class="gold-bar"></div>
           <h3>AI-Generated Cover Image</h3>
         </div>
-        <span style="font-size:11px;color:var(--muted);">1280 × 720 · wanx-v1</span>
+        <span style="font-size:11px;color:var(--muted);">1280 × 720 · Imagen 3 AI</span>
       </div>
       <div class="image-card-body">
         <div id="image-container">
@@ -503,9 +613,13 @@
 </footer>
 
 <script>
-  // ── Mode toggle ──────────────────────────────────────────────────────────────
-  let currentMode = "thought_leadership";
+  // ── State ────────────────────────────────────────────────────────────────────
+  let currentMode    = "thought_leadership";
+  let selectedStyles = new Set(["original"]);   // KOL chip selection
+  let allPosts       = [];                       // posts returned from /generate
+  let currentPostIdx = 0;                        // index of currently shown post
 
+  // ── Mode toggle ──────────────────────────────────────────────────────────────
   function selectMode(mode) {
     currentMode = mode;
     document.getElementById("btn-tl").classList.toggle("active", mode === "thought_leadership");
@@ -514,13 +628,45 @@
       mode === "thought_leadership" ? "Generate Thought Leadership Post" : "Generate Programme Post";
   }
 
-  // ── Loader ──────────────────────────────────────────────────────────────────
+  // ── KOL style chip selector ───────────────────────────────────────────────
+  function toggleStyle(style) {
+    if (selectedStyles.has(style)) {
+      // Deselect — but at least 1 must remain
+      if (selectedStyles.size > 1) {
+        selectedStyles.delete(style);
+      }
+    } else {
+      // Select — max 3
+      if (selectedStyles.size >= 3) {
+        const hint = document.getElementById("kol-sel-hint");
+        hint.textContent = "— max 3 styles";
+        hint.style.color = "#c0392b";
+        setTimeout(() => { hint.textContent = "— select up to 3"; hint.style.color = ""; }, 2000);
+        return;
+      }
+      selectedStyles.add(style);
+    }
+    updateChipUI();
+    renderCustomChips();
+  }
+
+  function updateChipUI() {
+    document.querySelectorAll(".style-chip").forEach(chip => {
+      const s      = chip.dataset.style;
+      const active = selectedStyles.has(s);
+      chip.classList.toggle("active", active);
+    });
+    const n = selectedStyles.size;
+    document.getElementById("style-sel-hint").textContent =
+      `— ${n} selected${n > 1 ? " · generates " + n + " posts" : ""}`;
+  }
+
+  // ── Loader ───────────────────────────────────────────────────────────────────
   const loaderMessages = [
     "Searching Serper for sources from the last 7 days...",
     "Scanning McKinsey, PwC, HBR and more...",
-    "Verifying source freshness...",
-    "Passing articles to Qwen for post drafting...",
-    "Writing post in APIB style...",
+    "Fetching full article via Jina Reader...",
+    "Writing post(s) with Qwen AI...",
     "Generating cover image with Wanx AI...",
     "Rendering cover image (this takes ~30s)...",
     "Almost there..."
@@ -529,11 +675,17 @@
 
   function startLoader() {
     loaderStep = 0;
-    document.getElementById("loader-text").textContent = loaderMessages[0];
+    const n = selectedStyles.size;
+    const base = n > 1
+      ? `Writing ${n} posts (one per style)...`
+      : "Writing post in APIB style...";
+    const msgs = [...loaderMessages];
+    msgs[3] = base;
+    document.getElementById("loader-text").textContent = msgs[0];
     loaderInterval = setInterval(() => {
-      loaderStep = (loaderStep + 1) % loaderMessages.length;
-      document.getElementById("loader-text").textContent = loaderMessages[loaderStep];
-    }, 4500);
+      loaderStep = (loaderStep + 1) % msgs.length;
+      document.getElementById("loader-text").textContent = msgs[loaderStep];
+    }, n > 1 ? 7000 : 4500);
   }
   function stopLoader() { clearInterval(loaderInterval); }
 
@@ -552,72 +704,24 @@
 
     try {
       const resp = await fetch("/generate", {
-        method: "POST",
+        method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: currentMode })
+        body:    JSON.stringify({
+          mode:       currentMode,
+          kol_styles: Array.from(selectedStyles),
+        }),
       });
       const data = await resp.json();
       if (!data.success) throw new Error(data.error || "Unknown error.");
 
-      // Topic meta
+      // Update topic meta panel
       document.getElementById("next-topic-display").textContent = data.topic;
-      const recentDiv = document.getElementById("recent-topics-display");
       if (data.recent_topics && data.recent_topics.length > 0) {
-        recentDiv.innerHTML = data.recent_topics
-          .map(t => `<span class="topic-chip">${escHtml(t)}</span>`).join("");
+        document.getElementById("recent-topics-display").innerHTML =
+          data.recent_topics.map(t => `<span class="topic-chip">${escHtml(t)}</span>`).join("");
       }
 
-      // Results header
-      document.getElementById("results-topic-label").textContent = `Generated: ${data.topic}`;
-      const srcLink = document.getElementById("source-link");
-      if (data.source_url && data.source_url !== "#") {
-        srcLink.href = data.source_url;
-        srcLink.textContent = data.source_title
-          ? `Source: ${truncate(data.source_title, 60)}` : "View source";
-        srcLink.style.display = "inline";
-      } else {
-        srcLink.style.display = "none";
-      }
-
-      // Topic switch notice + Sources Found section
-      renderTopicSwitchNotice(data);
-      renderSourcesSection(data.serper_sources || [], data.serper_error || "", data.source_verified);
-
-      // Post body, hashtags, keywords, image (unchanged logic)
-      document.getElementById("post-body-text").value = data.post_body || "";
-      document.getElementById("hashtags-text").value =
-        (Array.isArray(data.hashtags) ? data.hashtags : []).join("\n");
-
-      const kwList = document.getElementById("keywords-list");
-      kwList.innerHTML = (Array.isArray(data.image_keywords) ? data.image_keywords : [])
-        .map((kw, i) => `<div class="keyword-item"><span class="keyword-num">${i+1}</span><span>${escHtml(kw)}</span></div>`)
-        .join("");
-
-      const imgContainer = document.getElementById("image-container");
-      const canvaTip     = document.getElementById("canva-tip");
-      const imgErrMsg    = document.getElementById("image-error-msg");
-      if (data.image_url) {
-        imgContainer.innerHTML =
-          `<img class="generated-image" src="${escHtml(data.image_url)}"
-                alt="AI-generated cover for ${escHtml(data.topic)}" />
-           <a class="image-download-btn" href="${escHtml(data.image_url)}"
-              download target="_blank" rel="noopener">Download Image</a>`;
-        canvaTip.style.display = "block";
-        imgErrMsg.style.display = "none";
-      } else {
-        imgContainer.innerHTML = `<div class="image-placeholder">Image generation unavailable</div>`;
-        canvaTip.style.display = "none";
-        if (data.image_error) {
-          imgErrMsg.textContent = "Image generation failed: " + data.image_error;
-          imgErrMsg.style.display = "block";
-        }
-      }
-
-      results.classList.add("active");
-      results.scrollIntoView({ behavior: "smooth", block: "start" });
-
-      // Refresh history panel
-      loadHistory();
+      renderResults(data);
 
     } catch (err) {
       errorBanner.textContent = "Error: " + err.message;
@@ -629,20 +733,108 @@
     }
   }
 
-  // ── Topic switch notice ──────────────────────────────────────────────────────
+  // ── Unified results renderer ──────────────────────────────────────────────────
+  function renderResults(data) {
+    allPosts       = data.posts || [];
+    currentPostIdx = 0;
+
+    document.getElementById("results-topic-label").textContent = `Generated: ${data.topic}`;
+
+    // Source link — from first post
+    const srcLink = document.getElementById("source-link");
+    const p0 = allPosts[0] || {};
+    if (p0.source_url && p0.source_url !== "#") {
+      srcLink.href        = p0.source_url;
+      srcLink.textContent = p0.source_title ? `Source: ${truncate(p0.source_title, 60)}` : "View source";
+      srcLink.style.display = "inline";
+    } else {
+      srcLink.style.display = "none";
+    }
+
+    renderTopicSwitchNotice(data);
+    renderSourcesSection(data.serper_sources || [], data.serper_error || "", p0.source_verified || false);
+
+    // Image keywords from first post (stable across pagination)
+    document.getElementById("keywords-list").innerHTML =
+      (Array.isArray(p0.image_keywords) ? p0.image_keywords : [])
+        .map((kw, i) => `<div class="keyword-item"><span class="keyword-num">${i+1}</span><span>${escHtml(kw)}</span></div>`)
+        .join("");
+
+    showPost(0);
+    renderImage(data);
+
+    document.getElementById("results").classList.add("active");
+    document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+    loadHistory();
+  }
+
+  // ── Pagination ────────────────────────────────────────────────────────────────
+  function showPost(idx) {
+    if (!allPosts.length) return;
+    currentPostIdx = Math.max(0, Math.min(idx, allPosts.length - 1));
+    const p = allPosts[currentPostIdx];
+
+    document.getElementById("post-body-text").value = p.post_body || "";
+    document.getElementById("hashtags-text").value  = (p.hashtags || []).join("\n");
+
+    const nav = document.getElementById("post-nav");
+    if (allPosts.length > 1) {
+      nav.style.display = "flex";
+      document.getElementById("page-style-label").textContent = p.style || "Original";
+      document.getElementById("page-counter").textContent     = `${currentPostIdx + 1} / ${allPosts.length}`;
+    } else {
+      nav.style.display = "none";
+    }
+  }
+
+  function switchPost(dir) {
+    showPost(currentPostIdx + dir);
+  }
+
+  function copyCurrentPost(btn) {
+    const ta = document.getElementById("post-body-text");
+    navigator.clipboard.writeText(ta.value).then(() => {
+      btn.textContent = "Copied!"; btn.classList.add("copied");
+      setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
+    }).catch(() => { ta.select(); document.execCommand("copy"); });
+  }
+
+  // ── Shared image renderer ────────────────────────────────────────────────────
+  function renderImage(data) {
+    const imgContainer = document.getElementById("image-container");
+    const canvaTip     = document.getElementById("canva-tip");
+    const imgErrMsg    = document.getElementById("image-error-msg");
+    if (data.image_url) {
+      imgContainer.innerHTML =
+        `<img class="generated-image" src="${escHtml(data.image_url)}"
+              alt="AI-generated cover for ${escHtml(data.topic)}" />
+         <a class="image-download-btn" href="${escHtml(data.image_url)}"
+            download target="_blank" rel="noopener">Download Image</a>`;
+      canvaTip.style.display  = "block";
+      imgErrMsg.style.display = "none";
+    } else {
+      imgContainer.innerHTML = `<div class="image-placeholder">Image generation unavailable</div>`;
+      canvaTip.style.display = "none";
+      if (data.image_error) {
+        imgErrMsg.textContent   = "Image generation failed: " + data.image_error;
+        imgErrMsg.style.display = "block";
+      }
+    }
+  }
+
+  // ── Topic switch notice ───────────────────────────────────────────────────────
   function renderTopicSwitchNotice(data) {
     const el = document.getElementById("topic-switch-notice");
     if (data.topic_switched && data.tried_topics && data.tried_topics.length > 1) {
-      const skipped = data.tried_topics.slice(0, -1).map(t => `<strong>${escHtml(t)}</strong>`).join(", ");
-      el.innerHTML =
-        `No qualifying sources found for ${skipped}. Auto-switched to <strong>${escHtml(data.topic)}</strong>.`;
+      const skipped = data.tried_topics.slice(0,-1).map(t=>`<strong>${escHtml(t)}</strong>`).join(", ");
+      el.innerHTML = `No qualifying sources found for ${skipped}. Auto-switched to <strong>${escHtml(data.topic)}</strong>.`;
       el.style.display = "block";
     } else {
       el.style.display = "none";
     }
   }
 
-  // ── Sources Found renderer ───────────────────────────────────────────────────
+  // ── Sources Found renderer ────────────────────────────────────────────────────
   function renderSourcesSection(sources, serperError, sourceVerified) {
     const section      = document.getElementById("sources-section");
     const list         = document.getElementById("sources-list");
@@ -651,37 +843,29 @@
     const fallbackNote = document.getElementById("serper-fallback-note");
 
     if (sources.length > 0) {
-      badge.innerHTML =
-        `<span class="sources-badge"><span class="sources-dot"></span>${sources.length} retrieved</span>`;
-
+      badge.innerHTML  = `<span class="sources-badge"><span class="sources-dot"></span>${sources.length} retrieved</span>`;
       vbadge.innerHTML = sourceVerified
         ? `<span class="verified-badge">Source pinned</span>`
         : `<span class="unverified-badge">Source unverified</span>`;
-
       list.innerHTML = sources.map(art => `
         <div class="source-article">
           <div class="source-article-meta">
-            <span class="source-pub-chip">${escHtml(art.source || "Unknown")}</span>
-            ${art.score !== undefined
-              ? `<span class="source-score-chip" title="${art.score_breakdown
-                  ? `Rel:${art.score_breakdown.relevance} Rec:${art.score_breakdown.recency} Auth:${art.score_breakdown.authority} Exec:${art.score_breakdown.exec} HK:${art.score_breakdown.asia}`
-                  : ""}">score ${art.score}</span>`
-              : ""}
-            <span class="source-article-date">${escHtml(art.date || "")}</span>
+            <span class="source-pub-chip">${escHtml(art.source||"Unknown")}</span>
+            ${art.score!==undefined
+              ?`<span class="source-score-chip" title="${art.score_breakdown
+                  ?`Rel:${art.score_breakdown.relevance} Rec:${art.score_breakdown.recency} Auth:${art.score_breakdown.authority} Exec:${art.score_breakdown.exec} HK:${art.score_breakdown.asia}`
+                  :""}">score ${art.score}</span>`:""}
+            <span class="source-article-date">${escHtml(art.date||"")}</span>
           </div>
           <a class="source-article-title" href="${escHtml(art.url)}" target="_blank" rel="noopener">${escHtml(art.title)}</a>
-          <p class="source-article-snippet">${escHtml(art.snippet || "")}</p>
+          <p class="source-article-snippet">${escHtml(art.snippet||"")}</p>
         </div>`).join("");
-
       fallbackNote.style.display = "none";
       section.style.display = "block";
     } else {
-      badge.innerHTML = "";
-      vbadge.innerHTML = "";
-      list.innerHTML = "";
+      badge.innerHTML = ""; vbadge.innerHTML = ""; list.innerHTML = "";
       if (serperError) {
-        fallbackNote.textContent =
-          `Serper unavailable (${serperError}). Post generated using Qwen web search instead.`;
+        fallbackNote.textContent = `Serper unavailable (${serperError}). Post generated using Qwen web search instead.`;
         fallbackNote.style.display = "block";
         section.style.display = "block";
       } else {
@@ -690,36 +874,66 @@
     }
   }
 
-  // ── History panel ────────────────────────────────────────────────────────────
+  // ── History panel ─────────────────────────────────────────────────────────────
   async function loadHistory() {
     try {
-      const resp = await fetch("/history");
+      const resp    = await fetch("/history");
       const entries = await resp.json();
-
       const panel      = document.getElementById("history-panel");
       const list       = document.getElementById("history-list");
       const countLabel = document.getElementById("history-count-label");
 
-      if (!entries || entries.length === 0) {
-        panel.style.display = "none";
-        return;
-      }
+      if (!entries || entries.length === 0) { panel.style.display = "none"; return; }
 
-      panel.style.display = "block";
-      countLabel.textContent = `${entries.length} post${entries.length !== 1 ? "s" : ""} generated`;
+      panel.style.display    = "block";
+      countLabel.textContent = `${entries.length} post${entries.length!==1?"s":""} generated`;
 
       list.innerHTML = entries.map((entry, idx) => {
-        const topicText    = escHtml(entry.topic || "Unknown topic");
-        const dateText     = escHtml(formatDate(entry.date || ""));
-        const sourceText   = entry.source_publication
-          ? escHtml(entry.source_publication + (entry.source_date ? " · " + entry.source_date : ""))
+        const topicText   = escHtml(entry.topic || "Unknown topic");
+        const dateText    = escHtml(formatDate(entry.date || ""));
+        const sourceText  = entry.source_publication
+          ? escHtml(entry.source_publication + (entry.source_date ? " · "+entry.source_date : ""))
           : "";
-        const hasBody      = entry.post_body && entry.post_body.trim().length > 0;
-        const bodyHtml     = hasBody
+        const hasBody     = entry.post_body && entry.post_body.trim().length > 0;
+
+        // Mode chip
+        const isPP       = entry.mode === "programme_promotion";
+        const modeLabel  = isPP ? "Programme" : "Thought Leadership";
+        const modeChipCls = isPP ? "mode-chip-pp" : "mode-chip-tl";
+
+        // KOL name chip
+        const kolChip = entry.kol_name
+          ? `<span style="background:rgba(240,165,0,0.12);border:1px solid rgba(240,165,0,0.35);color:#7a5800;border-radius:20px;padding:2px 10px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0;">${escHtml(entry.kol_name)}</span>`
+          : "";
+
+        const bodyHtml = hasBody
           ? `<textarea class="history-body-text" readonly rows="10">${escHtml(entry.post_body)}</textarea>`
-          : `<div class="history-no-body">Post body not saved (generated before history tracking).</div>`;
-        const modeLabel    = entry.mode === "programme_promotion" ? "Programme" : "Thought Leadership";
-        const modeChipCls  = entry.mode === "programme_promotion" ? "mode-chip-pp" : "mode-chip-tl";
+          : `<div class="history-no-body">Post body not saved.</div>`;
+
+        const sourceHtml = entry.source_url
+          ? `<div class="history-section-label">Source</div>
+             <div class="history-source-row">
+               <a class="history-source-link" href="${escHtml(entry.source_url)}" target="_blank" rel="noopener">${escHtml(entry.source_title || entry.source_url)}</a>
+               ${entry.source_publication
+                 ? `<span class="history-source-meta">${escHtml(entry.source_publication)}${entry.source_date ? " · " + escHtml(entry.source_date) : ""}</span>`
+                 : ""}
+             </div>`
+          : "";
+
+        const hashtagsHtml = (entry.hashtags && entry.hashtags.length > 0)
+          ? `<div class="history-hashtags">
+               <div class="history-section-label">Hashtags</div>
+               <textarea class="history-body-text hashtag-text" readonly rows="4">${escHtml(entry.hashtags.join("\n"))}</textarea>
+             </div>`
+          : "";
+
+        const imageHtml = entry.image_url
+          ? `<div class="history-image-wrap">
+               <div class="history-section-label">Cover Image</div>
+               <img class="history-cover-img" src="${escHtml(entry.image_url)}" alt="Cover" loading="lazy" />
+               <a class="image-download-btn" href="${escHtml(entry.image_url)}" download target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;">Download</a>
+             </div>`
+          : "";
 
         return `
           <div class="history-entry" id="hentry-${idx}">
@@ -727,32 +941,28 @@
               <div class="history-entry-left">
                 <span class="history-topic-chip">${topicText}</span>
                 <span class="${modeChipCls}">${modeLabel}</span>
+                ${kolChip}
                 <span class="history-date">${dateText}</span>
-                ${sourceText ? `<span class="history-source-label">${sourceText}</span>` : ""}
+                ${sourceText?`<span class="history-source-label">${sourceText}</span>`:""}
               </div>
               <div class="history-entry-right">
-                ${hasBody
-                  ? `<button class="history-copy-btn" onclick="copyHistoryEntry(event, this, ${idx})">Copy</button>`
-                  : ""}
+                ${hasBody?`<button class="history-copy-btn" onclick="copyHistoryEntry(event,this,${idx})">Copy</button>`:""}
                 <span class="expand-arrow" id="arrow-${idx}">&#9660;</span>
               </div>
             </div>
             <div class="history-entry-body" id="hbody-${idx}">
-              ${bodyHtml}
+              ${bodyHtml}${sourceHtml}${hashtagsHtml}${imageHtml}
             </div>
           </div>`;
       }).join("");
-
-    } catch (err) {
-      console.warn("Failed to load history:", err);
-    }
+    } catch (err) { console.warn("Failed to load history:", err); }
   }
 
   function toggleEntry(idx) {
     const body  = document.getElementById(`hbody-${idx}`);
     const arrow = document.getElementById(`arrow-${idx}`);
-    const open  = body.classList.toggle("open");
-    arrow.classList.toggle("open", open);
+    body.classList.toggle("open");
+    arrow.classList.toggle("open", body.classList.contains("open"));
   }
 
   function copyHistoryEntry(event, btn, idx) {
@@ -760,13 +970,12 @@
     const ta = document.querySelector(`#hbody-${idx} .history-body-text`);
     if (!ta) return;
     navigator.clipboard.writeText(ta.value).then(() => {
-      btn.textContent = "Copied!";
-      btn.classList.add("copied");
+      btn.textContent = "Copied!"; btn.classList.add("copied");
       setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
     });
   }
 
-  // ── Copy helpers ─────────────────────────────────────────────────────────────
+  // ── Copy helpers ──────────────────────────────────────────────────────────────
   function copySection(textareaId, btn) {
     const ta = document.getElementById(textareaId);
     navigator.clipboard.writeText(ta.value).then(() => {
@@ -784,25 +993,107 @@
     });
   }
 
-  // ── Utilities ────────────────────────────────────────────────────────────────
+  // ── Utilities ─────────────────────────────────────────────────────────────────
   function escHtml(str) {
     return String(str)
       .replace(/&/g,"&amp;").replace(/</g,"&lt;")
       .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
-  function truncate(str, n) { return str.length > n ? str.slice(0, n) + "..." : str; }
+  function truncate(str, n) { return str.length > n ? str.slice(0,n)+"..." : str; }
   function formatDate(iso) {
     if (!iso) return "";
     try {
       const d = new Date(iso);
-      return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })
-        + " · "
-        + d.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" });
+      return d.toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})
+        + " · " + d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
     } catch { return iso; }
   }
 
-  // Load history on page ready
-  document.addEventListener("DOMContentLoaded", loadHistory);
+  // ── Custom styles state ──────────────────────────────────────────────────
+  let customStyles = [];
+
+  async function loadCustomStyles() {
+    try {
+      const resp = await fetch("/custom-styles");
+      const data = await resp.json();
+      customStyles = data.styles || [];
+      renderCustomChips();
+    } catch (err) { console.warn("Could not load custom styles:", err); }
+  }
+
+  function renderCustomChips() {
+    const container = document.getElementById("custom-chips");
+    const newBtn    = document.getElementById("new-style-btn");
+    container.innerHTML = customStyles.map(s => `
+      <span class="custom-style-chip${selectedStyles.has(s.id) ? " active" : ""}"
+            data-id="${s.id}" onclick="toggleStyle('${s.id}')">
+        <span class="chip-name" ondblclick="startRename(event,'${s.id}',this)"
+              title="Double-click to rename">${escHtml(s.name)}</span>
+        <button class="chip-del" onclick="deleteCustomStyle(event,'${s.id}')" title="Delete">×</button>
+      </span>`
+    ).join("");
+    newBtn.disabled = customStyles.length >= 5;
+    newBtn.title    = customStyles.length >= 5 ? "Maximum 5 custom styles — delete one to add more" : "";
+    // Remove stale custom IDs from selection
+    for (const id of [...selectedStyles]) {
+      if (id.startsWith("custom_") && !customStyles.find(s => s.id === id)) {
+        selectedStyles.delete(id);
+      }
+    }
+  }
+
+  // ── Rename (double-click chip label) ─────────────────────────────────────
+  function startRename(event, styleId, nameEl) {
+    event.stopPropagation();
+    const currentName = nameEl.textContent;
+    const input = document.createElement("input");
+    input.type      = "text";
+    input.className = "rename-input";
+    input.value     = currentName;
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+
+    async function commit() {
+      const newName = input.value.trim();
+      if (!newName || newName === currentName) { renderCustomChips(); return; }
+      try {
+        const resp = await fetch(`/custom-styles/${styleId}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+          const s = customStyles.find(s => s.id === styleId);
+          if (s) s.name = data.style.name;
+        } else { alert(data.error || "Rename failed."); }
+      } catch { /* silent */ }
+      renderCustomChips();
+    }
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter")  input.blur();
+      if (e.key === "Escape") { input.removeEventListener("blur", commit); renderCustomChips(); }
+    });
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  async function deleteCustomStyle(event, styleId) {
+    event.stopPropagation();
+    const s = customStyles.find(s => s.id === styleId);
+    if (!confirm(`Delete "${s ? s.name : styleId}"? This cannot be undone.`)) return;
+    try {
+      const resp = await fetch(`/custom-styles/${styleId}`, { method: "DELETE" });
+      const data = await resp.json();
+      if (data.success) {
+        customStyles = customStyles.filter(s => s.id !== styleId);
+        selectedStyles.delete(styleId);
+        renderCustomChips();
+        updateChipUI();
+      } else { alert(data.error || "Delete failed."); }
+    } catch (err) { alert("Delete failed: " + err.message); }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => { loadHistory(); loadCustomStyles(); });
 </script>
 </body>
 </html>

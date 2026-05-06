@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Writing Style Manager — APIB</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --purple:       #4B2D7F;
+      --purple-dark:  #3a2263;
+      --gold:         #F0A500;
+      --gold-light:   #f7c34a;
+      --bg:           #f5f4f8;
+      --surface:      #ffffff;
+      --text:         #1a1a2e;
+      --muted:        #6b6b8a;
+      --border:       #e0dcea;
+      --radius:       10px;
+      --green:        #1e8c45;
+      --red:          #c0392b;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6; }
+
+    /* Header */
+    header {
+      background: var(--purple); color: #fff; padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between; height: 64px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .logo-mark {
+      width: 40px; height: 40px; background: var(--gold); border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px; color: var(--purple);
+    }
+    .header-titles h1 { font-size: 15px; font-weight: 700; }
+    .header-titles p  { font-size: 11px; opacity: 0.75; }
+    .back-link {
+      font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85);
+      text-decoration: none; display: flex; align-items: center; gap: 6px;
+    }
+    .back-link:hover { color: #fff; }
+
+    /* Layout */
+    main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .page-title { font-size: 20px; font-weight: 800; color: var(--purple); margin-bottom: 4px; }
+    .page-subtitle { font-size: 13px; color: var(--muted); margin-bottom: 2rem; }
+
+    /* Cards */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: 1.5rem;
+      box-shadow: 0 1px 4px rgba(75,45,127,0.06); overflow: hidden;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px; background: rgba(75,45,127,0.04);
+      border-bottom: 1px solid var(--border);
+    }
+    .card-header-left { display: flex; align-items: center; gap: 8px; }
+    .gold-bar { width: 3px; height: 16px; background: var(--gold); border-radius: 2px; }
+    .card-header h2 { font-size: 13px; font-weight: 700; text-transform: uppercase;
+                      letter-spacing: 0.6px; color: var(--purple); }
+    .card-body { padding: 20px; }
+
+    /* ── Multi-post input area ── */
+    .posts-label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .posts-label-text {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--muted);
+    }
+    .btn-add-post {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 12px; background: transparent; color: var(--purple);
+      border: 1.5px dashed var(--purple); border-radius: 6px;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-add-post:hover:not(:disabled) { background: rgba(75,45,127,0.06); }
+    .btn-add-post:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    #post-inputs { display: flex; flex-direction: column; gap: 12px; }
+
+    .post-input-block { position: relative; }
+    .post-input-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .post-input-num {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.6px; color: var(--purple); opacity: 0.6;
+    }
+    .btn-remove-post {
+      font-size: 11px; color: var(--muted); background: none; border: none;
+      cursor: pointer; padding: 2px 6px; border-radius: 4px; transition: all 0.15s;
+    }
+    .btn-remove-post:hover { color: var(--red); background: rgba(192,57,43,0.07); }
+
+    /* Screenshot upload */
+    .btn-upload-img {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--purple); background: none; border: none;
+      cursor: pointer; padding: 2px 6px; border-radius: 4px;
+      opacity: 0.7; transition: all 0.15s;
+    }
+    .btn-upload-img:hover { opacity: 1; background: rgba(75,45,127,0.07); }
+    .ocr-notice {
+      font-size: 11px; color: var(--green); margin-top: 5px; display: none;
+    }
+    .ocr-notice.active { display: block; }
+    .ocr-spinner {
+      display: none; font-size: 11px; color: var(--purple);
+      margin-top: 5px; align-items: center; gap: 6px;
+    }
+    .ocr-spinner.active { display: flex; }
+    .ocr-spinner-ring {
+      width: 13px; height: 13px; border: 2px solid rgba(75,45,127,0.2);
+      border-top-color: var(--purple); border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+
+    .ref-textarea {
+      width: 100%; min-height: 130px; border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px; font-size: 13px; font-family: inherit; line-height: 1.7;
+      resize: vertical; outline: none; background: var(--bg); color: var(--text);
+      transition: border-color 0.15s;
+    }
+    .ref-textarea:focus { border-color: var(--purple); background: #fff; }
+    .char-count { font-size: 11px; color: var(--muted); margin-top: 5px; text-align: right; }
+    #total-chars { font-size: 11px; color: var(--muted); margin-top: 8px; }
+
+    /* Buttons */
+    .btn-primary {
+      padding: 10px 24px; background: var(--purple); color: #fff;
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--purple-dark); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-gold {
+      padding: 10px 24px; background: var(--gold); color: var(--purple);
+      border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-gold:hover:not(:disabled) { background: var(--gold-light); }
+    .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline {
+      padding: 8px 18px; background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 8px; font-size: 13px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-outline:hover { border-color: var(--purple); color: var(--purple); }
+    .btn-danger {
+      padding: 6px 14px; background: transparent; color: var(--red);
+      border: 1px solid rgba(192,57,43,0.3); border-radius: 6px; font-size: 12px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-danger:hover { background: rgba(192,57,43,0.08); border-color: var(--red); }
+
+    /* Spinner */
+    .spinner-wrap { display: none; align-items: center; gap: 10px; color: var(--purple);
+                    font-size: 13px; font-weight: 500; padding: 8px 0; }
+    .spinner-wrap.active { display: flex; }
+    .spinner { width: 20px; height: 20px; border: 3px solid rgba(75,45,127,0.2);
+               border-top-color: var(--purple); border-radius: 50%;
+               animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Error / success banners */
+    .banner { display: none; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-top: 12px; }
+    .banner.active { display: block; }
+    .banner-error   { background: #fff0f0; border: 1px solid #f5c0c0; color: var(--red); }
+    .banner-success { background: rgba(30,140,69,0.08); border: 1px solid rgba(30,140,69,0.3); color: var(--green); }
+
+    /* ── Extracted profile form — colour-coded sections ── */
+    #profile-form { display: none; margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
+    #profile-form.active { display: block; }
+    .profile-notice {
+      font-size: 12.5px; color: var(--muted); margin-bottom: 16px;
+      background: rgba(75,45,127,0.04); border: 1px solid var(--border);
+      border-radius: 6px; padding: 10px 14px;
+    }
+
+    .field-group {
+      margin-bottom: 12px; border-radius: 10px; padding: 14px 16px;
+      border-left: 4px solid transparent;
+    }
+    .field-label {
+      display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; margin-bottom: 7px;
+    }
+    .field-input {
+      width: 100%; border: 1px solid rgba(0,0,0,0.12); border-radius: 6px;
+      padding: 9px 12px; font-size: 13px; font-family: inherit; line-height: 1.6;
+      outline: none; background: rgba(255,255,255,0.75); resize: vertical; min-height: 60px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .field-input:focus { background: #fff; }
+    .field-input.name-input { min-height: unset; height: 38px; resize: none; }
+    .blend-field { min-height: 80px; }
+
+    /* Style Name — purple */
+    .fg-name {
+      background: #f0ebfa; border-left-color: #4B2D7F;
+    }
+    .fg-name .field-label { color: #4B2D7F; }
+    .fg-name .field-input:focus { border-color: #4B2D7F; }
+
+    /* Hook Style — rose/pink */
+    .fg-hook {
+      background: #fff0f4; border-left-color: #c0392b;
+    }
+    .fg-hook .field-label { color: #a8303f; }
+    .fg-hook .field-input:focus { border-color: #c0392b; }
+
+    /* Structure — amber/yellow */
+    .fg-structure {
+      background: #fffbea; border-left-color: #d4860a;
+    }
+    .fg-structure .field-label { color: #b57208; }
+    .fg-structure .field-input:focus { border-color: #d4860a; }
+
+    /* Tone — sky blue */
+    .fg-tone {
+      background: #eaf4ff; border-left-color: #1a6fb5;
+    }
+    .fg-tone .field-label { color: #1a6fb5; }
+    .fg-tone .field-input:focus { border-color: #1a6fb5; }
+
+    /* Credibility Signals — green */
+    .fg-credibility {
+      background: #eafaf1; border-left-color: #1e8c45;
+    }
+    .fg-credibility .field-label { color: #1a7a3c; }
+    .fg-credibility .field-input:focus { border-color: #1e8c45; }
+
+    /* Engagement Tactics — orange */
+    .fg-engagement {
+      background: #fff5ec; border-left-color: #c05c0a;
+    }
+    .fg-engagement .field-label { color: #a84f08; }
+    .fg-engagement .field-input:focus { border-color: #c05c0a; }
+
+    /* Blend Directive — teal */
+    .fg-blend {
+      background: #edfafa; border-left-color: #0a8c8c;
+    }
+    .fg-blend .field-label { color: #077070; }
+    .fg-blend .field-input:focus { border-color: #0a8c8c; }
+
+    .profile-footer {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: 12px; margin-top: 20px; padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Saved styles list */
+    #styles-list { padding: 0; }
+    .style-item {
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    }
+    .style-item:last-child { border-bottom: none; }
+    .style-item-left { flex: 1; min-width: 0; }
+    .style-item-name {
+      font-size: 14px; font-weight: 700; color: var(--purple);
+      display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
+    }
+    .style-name-display { cursor: pointer; }
+    .style-name-display:hover { text-decoration: underline; }
+    .rename-input {
+      font-size: 13px; border: 1px solid var(--purple); border-radius: 4px;
+      padding: 2px 8px; outline: none; width: 160px;
+    }
+    .style-item-date { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+    .style-profile-rows { display: grid; gap: 4px; }
+    .style-profile-row { font-size: 12px; color: var(--text); line-height: 1.5; }
+    .style-profile-row-label {
+      font-weight: 700; color: var(--muted); font-size: 10px;
+      text-transform: uppercase; letter-spacing: 0.4px;
+    }
+    .style-preview {
+      font-size: 11.5px; color: var(--muted); font-style: italic;
+      margin-top: 8px; line-height: 1.5;
+    }
+    .style-item-right { flex-shrink: 0; }
+    #empty-styles {
+      text-align: center; padding: 2rem; font-size: 13px; color: var(--muted);
+    }
+    .capacity-note {
+      font-size: 12px; color: var(--muted); padding: 10px 20px;
+      border-top: 1px solid var(--border); background: rgba(75,45,127,0.02);
+    }
+
+    footer {
+      text-align: center; color: var(--muted); font-size: 12px;
+      padding: 2rem; border-top: 1px solid var(--border); margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <div class="logo-mark">APIB</div>
+    <div class="header-titles">
+      <h1>Writing Style Manager</h1>
+      <p>CUHK Business School — Executive Education</p>
+    </div>
+  </div>
+  <a href="/" class="back-link">← Back to Generator</a>
+</header>
+
+<main>
+  <div class="page-title">Custom Writing Styles</div>
+  <div class="page-subtitle">
+    Paste 1–3 LinkedIn posts as reference samples. AI extracts the rhetorical style — you review, edit, and save up to 5 styles.
+    Saved styles appear as chips on the generator homepage.
+  </div>
+
+  <!-- ── Add New Style ── -->
+  <div class="card" id="add-card">
+    <div class="card-header">
+      <div class="card-header-left">
+        <div class="gold-bar"></div>
+        <h2>Add New Style</h2>
+      </div>
+      <span id="capacity-badge" style="font-size:12px;color:var(--muted);"></span>
+    </div>
+    <div class="card-body">
+
+      <!-- Multi-post input -->
+      <div class="posts-label">
+        <span class="posts-label-text">Reference Posts</span>
+        <button class="btn-add-post" id="add-post-btn" onclick="addPostField()" title="Add another post (max 3)">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add Post
+        </button>
+      </div>
+
+      <div id="post-inputs">
+        <!-- Post 1 is always present (seeded by JS) -->
+      </div>
+      <div id="total-chars"></div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn-primary" id="analyze-btn" onclick="analyzeStyle()">Analyze Style</button>
+        <div class="spinner-wrap" id="analyze-spinner">
+          <div class="spinner"></div>
+          <span>Analyzing writing style…</span>
+        </div>
+      </div>
+
+      <div class="banner banner-error" id="analyze-error"></div>
+
+      <!-- Extracted profile — shown after analysis, editable before saving -->
+      <div id="profile-form">
+        <div class="profile-notice">
+          AI has extracted the style profile below. Review and edit any field before saving.
+        </div>
+
+        <div class="field-group fg-name">
+          <label class="field-label" for="f-name">Style Name</label>
+          <textarea class="field-input name-input" id="f-name" rows="1" placeholder="e.g. Style 1, Concise & Direct…"></textarea>
+        </div>
+        <div class="field-group fg-hook">
+          <label class="field-label" for="f-hook">Hook Style</label>
+          <textarea class="field-input" id="f-hook" rows="2"></textarea>
+        </div>
+        <div class="field-group fg-structure">
+          <label class="field-label" for="f-structure">Structure</label>
+          <textarea class="field-input" id="f-structure" rows="2"></textarea>
+        </div>
+        <div class="field-group fg-tone">
+          <label class="field-label" for="f-tone">Tone</label>
+          <textarea class="field-input" id="f-tone" rows="2"></textarea>
+        </div>
+        <div class="field-group fg-credibility">
+          <label class="field-label" for="f-credibility">Credibility Signals</label>
+          <textarea class="field-input" id="f-credibility" rows="2"></textarea>
+        </div>
+        <div class="field-group fg-engagement">
+          <label class="field-label" for="f-engagement">Engagement Tactics</label>
+          <textarea class="field-input" id="f-engagement" rows="2"></textarea>
+        </div>
+        <div class="field-group fg-blend">
+          <label class="field-label" for="f-blend">Blend Directive
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;"> — how this style merges with APIB's voice</span>
+          </label>
+          <textarea class="field-input blend-field" id="f-blend" rows="3"></textarea>
+        </div>
+
+        <div class="banner banner-error"   id="save-error"></div>
+        <div class="banner banner-success" id="save-success"></div>
+
+        <div class="profile-footer">
+          <button class="btn-outline" onclick="resetForm()">Clear</button>
+          <button class="btn-gold" id="save-btn" onclick="saveStyle()">Save Style</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Saved Styles ── -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-header-left">
+        <div class="gold-bar"></div>
+        <h2>Saved Styles</h2>
+      </div>
+      <span id="styles-count" style="font-size:12px;color:var(--muted);"></span>
+    </div>
+    <div id="styles-list">
+      <div id="empty-styles">No custom styles saved yet. Analyze a writing sample above to create your first style.</div>
+    </div>
+    <div class="capacity-note" id="capacity-note" style="display:none;"></div>
+  </div>
+</main>
+
+<footer>
+  CUHK Business School &mdash; Asia-Pacific Institute of Business &mdash; Executive Education
+</footer>
+
+<script>
+  let savedStyles   = [];
+  let postCount     = 0;   // tracks how many input blocks currently exist
+  const MAX_POSTS   = 3;
+
+  // ── Initialise first post input on load ──────────────────────────────────
+  function createPostBlock(index) {
+    const num = index + 1;
+    const div = document.createElement("div");
+    div.className = "post-input-block";
+    div.id        = `post-block-${num}`;
+    div.innerHTML = `
+      <div class="post-input-header">
+        <span class="post-input-num">Post ${num}</span>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <button class="btn-upload-img" onclick="triggerImageUpload(${num})" title="Upload a screenshot of a LinkedIn post">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="3" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="5.5" cy="7.5" r="1.5" fill="currentColor"/>
+              <path d="M1 11l4-3 3 2.5 3-3.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+            Upload screenshot
+          </button>
+          <input type="file" id="file-input-${num}" accept="image/*"
+                 style="display:none" onchange="handleImageUpload(event,${num})">
+          ${num > 1
+            ? `<button class="btn-remove-post" onclick="removePostField(${num})" title="Remove this post">Remove ×</button>`
+            : ""}
+        </div>
+      </div>
+      <textarea class="ref-textarea" id="post-${num}"
+        placeholder="Paste a LinkedIn post here — or upload a screenshot above. The AI extracts rhetorical technique, not content."
+        oninput="updateTotalChars()"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+        <div>
+          <div class="ocr-spinner" id="ocr-spinner-${num}">
+            <div class="ocr-spinner-ring"></div>
+            <span>Reading screenshot…</span>
+          </div>
+          <div class="ocr-notice" id="ocr-notice-${num}">✓ Text extracted from screenshot — review before analyzing.</div>
+        </div>
+        <div class="char-count" id="char-count-${num}">0 characters</div>
+      </div>`;
+    return div;
+  }
+
+  function addPostField() {
+    if (postCount >= MAX_POSTS) return;
+    const container = document.getElementById("post-inputs");
+    container.appendChild(createPostBlock(postCount));
+    postCount++;
+    updateAddBtn();
+    updateTotalChars();
+    // Focus new textarea
+    document.getElementById(`post-${postCount}`).focus();
+  }
+
+  function removePostField(num) {
+    const block = document.getElementById(`post-block-${num}`);
+    if (block) block.remove();
+    postCount--;
+    // Re-number remaining blocks
+    renumberPostBlocks();
+    updateAddBtn();
+    updateTotalChars();
+  }
+
+  function renumberPostBlocks() {
+    const blocks = document.querySelectorAll(".post-input-block");
+    blocks.forEach((block, i) => {
+      const newNum = i + 1;
+      block.id = `post-block-${newNum}`;
+      const numEl = block.querySelector(".post-input-num");
+      if (numEl) numEl.textContent = `Post ${newNum}`;
+      const ta = block.querySelector(".ref-textarea");
+      if (ta) ta.id = `post-${newNum}`;
+      const cc = block.querySelector(".char-count");
+      if (cc) cc.id = `char-count-${newNum}`;
+      const fi = block.querySelector("input[type=file]");
+      if (fi) { fi.id = `file-input-${newNum}`; fi.setAttribute("onchange", `handleImageUpload(event,${newNum})`); }
+      const uploadBtn = block.querySelector(".btn-upload-img");
+      if (uploadBtn) uploadBtn.setAttribute("onclick", `triggerImageUpload(${newNum})`);
+      const removeBtn = block.querySelector(".btn-remove-post");
+      if (removeBtn) removeBtn.setAttribute("onclick", `removePostField(${newNum})`);
+      const ocrSpin = block.querySelector(".ocr-spinner");
+      if (ocrSpin) ocrSpin.id = `ocr-spinner-${newNum}`;
+      const ocrNote = block.querySelector(".ocr-notice");
+      if (ocrNote) ocrNote.id = `ocr-notice-${newNum}`;
+    });
+  }
+
+  // ── Image OCR ─────────────────────────────────────────────────────────────
+  function triggerImageUpload(num) {
+    const fi = document.getElementById(`file-input-${num}`);
+    if (fi) fi.click();
+  }
+
+  async function handleImageUpload(event, num) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const spinEl   = document.getElementById(`ocr-spinner-${num}`);
+    const noticeEl = document.getElementById(`ocr-notice-${num}`);
+    const errEl    = document.getElementById("analyze-error");
+    const ta       = document.getElementById(`post-${num}`);
+
+    noticeEl.classList.remove("active");
+    errEl.classList.remove("active");
+    spinEl.classList.add("active");
+
+    try {
+      // Read file as base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve(reader.result.split(",")[1]); // strip data: prefix
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const resp = await fetch("/custom-styles/ocr-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_data: base64, mime_type: file.type || "image/png" }),
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "OCR failed.");
+
+      ta.value = data.text;
+      noticeEl.classList.add("active");
+      updateTotalChars();
+
+    } catch (err) {
+      errEl.textContent = "Screenshot read failed: " + err.message;
+      errEl.classList.add("active");
+    } finally {
+      spinEl.classList.remove("active");
+      // Reset file input so the same file can be re-uploaded if needed
+      event.target.value = "";
+    }
+  }
+
+  function updateAddBtn() {
+    const btn = document.getElementById("add-post-btn");
+    btn.disabled = postCount >= MAX_POSTS;
+    btn.title    = postCount >= MAX_POSTS ? "Maximum 3 posts reached" : "Add another post (max 3)";
+  }
+
+  function updateTotalChars() {
+    let total = 0;
+    for (let i = 1; i <= postCount; i++) {
+      const ta = document.getElementById(`post-${i}`);
+      const len = ta ? ta.value.length : 0;
+      const cc  = document.getElementById(`char-count-${i}`);
+      if (cc) cc.textContent = `${len} character${len !== 1 ? "s" : ""}`;
+      total += len;
+    }
+    const el = document.getElementById("total-chars");
+    if (postCount > 1) {
+      el.textContent = `Total: ${total} characters across ${postCount} posts`;
+    } else {
+      el.textContent = "";
+    }
+  }
+
+  function getAllReferenceText() {
+    const parts = [];
+    for (let i = 1; i <= postCount; i++) {
+      const ta = document.getElementById(`post-${i}`);
+      const v  = ta ? ta.value.trim() : "";
+      if (v) parts.push(v);
+    }
+    return parts.join("\n\n---\n\n");
+  }
+
+  // ── Load saved styles on boot ───────────────────────────────────────────
+  async function loadStyles() {
+    // Seed first post input
+    postCount = 0;
+    const container = document.getElementById("post-inputs");
+    container.appendChild(createPostBlock(0));
+    postCount = 1;
+    updateAddBtn();
+
+    try {
+      const resp = await fetch("/custom-styles");
+      const data = await resp.json();
+      savedStyles = data.styles || [];
+      renderStylesList();
+      updateCapacityUI();
+    } catch (err) { console.warn("Could not load styles:", err); }
+  }
+
+  function updateCapacityUI() {
+    const n = savedStyles.length;
+    document.getElementById("capacity-badge").textContent = `${n} / 5 saved`;
+    document.getElementById("styles-count").textContent   = `${n} / 5`;
+    const noteEl    = document.getElementById("capacity-note");
+    const analyzeBtn = document.getElementById("analyze-btn");
+    if (n >= 5) {
+      noteEl.textContent   = "Maximum 5 styles reached. Delete a style to add a new one.";
+      noteEl.style.display = "block";
+      analyzeBtn.disabled  = true;
+      analyzeBtn.title     = "Delete a style first to add more";
+    } else {
+      noteEl.style.display = "none";
+      analyzeBtn.disabled  = false;
+      analyzeBtn.title     = "";
+    }
+  }
+
+  // ── Analyze ──────────────────────────────────────────────────────────────
+  async function analyzeStyle() {
+    const text    = getAllReferenceText();
+    const errEl   = document.getElementById("analyze-error");
+    const spinner = document.getElementById("analyze-spinner");
+    const btn     = document.getElementById("analyze-btn");
+    errEl.classList.remove("active");
+
+    if (text.length < 100) {
+      errEl.textContent = "Please paste at least 100 characters of reference text.";
+      errEl.classList.add("active");
+      return;
+    }
+    if (savedStyles.length >= 5) {
+      errEl.textContent = "Maximum 5 styles reached. Delete one to add a new style.";
+      errEl.classList.add("active");
+      return;
+    }
+
+    btn.disabled      = true;
+    spinner.classList.add("active");
+
+    try {
+      const resp = await fetch("/custom-styles/preview", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reference_text: text }),
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "Analysis failed.");
+
+      const e = data.extracted;
+      const usedNames = new Set(savedStyles.map(s => s.name));
+      let suggestedName = "";
+      for (let i = 1; i <= 5; i++) {
+        if (!usedNames.has(`Style ${i}`)) { suggestedName = `Style ${i}`; break; }
+      }
+
+      document.getElementById("f-name").value        = suggestedName;
+      document.getElementById("f-hook").value        = e.hook_style          || "";
+      document.getElementById("f-structure").value   = e.structure           || "";
+      document.getElementById("f-tone").value        = e.tone                || "";
+      document.getElementById("f-credibility").value = e.credibility_signals || "";
+      document.getElementById("f-engagement").value  = e.engagement_tactics  || "";
+      document.getElementById("f-blend").value       = e.blend_directive     || "";
+
+      document.getElementById("save-error").classList.remove("active");
+      document.getElementById("save-success").classList.remove("active");
+      document.getElementById("profile-form").classList.add("active");
+      document.getElementById("profile-form").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    } catch (err) {
+      errEl.textContent = "Error: " + err.message;
+      errEl.classList.add("active");
+    } finally {
+      btn.disabled = false;
+      spinner.classList.remove("active");
+    }
+  }
+
+  // ── Save ─────────────────────────────────────────────────────────────────
+  async function saveStyle() {
+    const errEl   = document.getElementById("save-error");
+    const sucEl   = document.getElementById("save-success");
+    const saveBtn = document.getElementById("save-btn");
+    errEl.classList.remove("active");
+    sucEl.classList.remove("active");
+
+    const profile = {
+      hook_style:          document.getElementById("f-hook").value.trim(),
+      structure:           document.getElementById("f-structure").value.trim(),
+      tone:                document.getElementById("f-tone").value.trim(),
+      credibility_signals: document.getElementById("f-credibility").value.trim(),
+      engagement_tactics:  document.getElementById("f-engagement").value.trim(),
+    };
+
+    const emptyFields = Object.entries(profile).filter(([,v]) => !v).map(([k]) => k);
+    if (emptyFields.length) {
+      errEl.textContent = `Please fill in all fields before saving (missing: ${emptyFields.join(", ")}).`;
+      errEl.classList.add("active");
+      return;
+    }
+
+    saveBtn.disabled    = true;
+    saveBtn.textContent = "Saving…";
+
+    try {
+      const resp = await fetch("/custom-styles", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:                   document.getElementById("f-name").value.trim() || "Style",
+          blend_directive:        document.getElementById("f-blend").value.trim(),
+          extracted_profile:      profile,
+          reference_text_preview: getAllReferenceText().slice(0, 200),
+        }),
+      });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "Save failed.");
+
+      savedStyles.push(data.style);
+      renderStylesList();
+      updateCapacityUI();
+      sucEl.textContent = `"${data.style.name}" saved. It will appear as a chip on the generator homepage after refresh.`;
+      sucEl.classList.add("active");
+      resetForm();
+
+    } catch (err) {
+      errEl.textContent = "Error: " + err.message;
+      errEl.classList.add("active");
+    } finally {
+      saveBtn.disabled    = false;
+      saveBtn.textContent = "Save Style";
+    }
+  }
+
+  function resetForm() {
+    for (let i = 1; i <= postCount; i++) {
+      const ta = document.getElementById(`post-${i}`);
+      if (ta) ta.value = "";
+    }
+    // Remove extra post blocks, keep only 1
+    while (postCount > 1) {
+      const block = document.getElementById(`post-block-${postCount}`);
+      if (block) block.remove();
+      postCount--;
+    }
+    updateAddBtn();
+    updateTotalChars();
+    document.getElementById("profile-form").classList.remove("active");
+    document.getElementById("analyze-error").classList.remove("active");
+  }
+
+  // ── Render saved styles list ──────────────────────────────────────────────
+  function renderStylesList() {
+    const list    = document.getElementById("styles-list");
+    const emptyEl = document.getElementById("empty-styles");
+
+    if (!savedStyles.length) {
+      list.innerHTML = "";
+      list.appendChild(emptyEl);
+      emptyEl.style.display = "block";
+      return;
+    }
+    emptyEl.style.display = "none";
+
+    list.innerHTML = savedStyles.map(s => {
+      const p    = s.extracted_profile || {};
+      const date = s.created_at ? new Date(s.created_at).toLocaleDateString("en-US",
+        { month: "short", day: "numeric", year: "numeric" }) : "";
+      return `
+        <div class="style-item" id="sitem-${s.id}">
+          <div class="style-item-left">
+            <div class="style-item-name">
+              <span class="style-name-display" id="sname-${s.id}"
+                    onclick="startRename('${s.id}')" title="Click to rename">${escHtml(s.name)}</span>
+            </div>
+            <div class="style-item-date">Created ${date}</div>
+            <div class="style-profile-rows">
+              ${renderProfileRow("Hook", p.hook_style)}
+              ${renderProfileRow("Structure", p.structure)}
+              ${renderProfileRow("Tone", p.tone)}
+              ${renderProfileRow("Credibility", p.credibility_signals)}
+              ${renderProfileRow("Engagement", p.engagement_tactics)}
+            </div>
+            ${s.reference_text_preview
+              ? `<div class="style-preview">Reference sample: "${escHtml(s.reference_text_preview)}…"</div>`
+              : ""}
+          </div>
+          <div class="style-item-right">
+            <button class="btn-danger" onclick="deleteStyle('${s.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join("");
+  }
+
+  function renderProfileRow(label, value) {
+    if (!value) return "";
+    return `<div class="style-profile-row"><span class="style-profile-row-label">${label}: </span>${escHtml(value)}</div>`;
+  }
+
+  // ── Rename ────────────────────────────────────────────────────────────────
+  function startRename(styleId) {
+    const nameEl  = document.getElementById(`sname-${styleId}`);
+    const current = nameEl.textContent;
+    const input   = document.createElement("input");
+    input.type      = "text";
+    input.className = "rename-input";
+    input.value     = current;
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+
+    async function commit() {
+      const newName = input.value.trim();
+      if (!newName || newName === current) { renderStylesList(); return; }
+      try {
+        const resp = await fetch(`/custom-styles/${styleId}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: newName }),
+        });
+        const data = await resp.json();
+        if (data.success) {
+          const s = savedStyles.find(s => s.id === styleId);
+          if (s) s.name = data.style.name;
+        } else { alert(data.error || "Rename failed."); }
+      } catch { /* silent */ }
+      renderStylesList();
+    }
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter")  input.blur();
+      if (e.key === "Escape") { input.removeEventListener("blur", commit); renderStylesList(); }
+    });
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  async function deleteStyle(styleId) {
+    const s = savedStyles.find(s => s.id === styleId);
+    if (!confirm(`Delete "${s ? s.name : styleId}"? This cannot be undone.`)) return;
+    try {
+      const resp = await fetch(`/custom-styles/${styleId}`, { method: "DELETE" });
+      const data = await resp.json();
+      if (data.success) {
+        savedStyles = savedStyles.filter(s => s.id !== styleId);
+        renderStylesList();
+        updateCapacityUI();
+      } else { alert(data.error || "Delete failed."); }
+    } catch (err) { alert("Delete failed: " + err.message); }
+  }
+
+  // ── Util ──────────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  document.addEventListener("DOMContentLoaded", loadStyles);
+</script>
+</body>
+</html>
