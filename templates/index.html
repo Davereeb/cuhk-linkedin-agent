@@ -319,6 +319,12 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .history-entry-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .history-delete-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 15px; line-height: 1; padding: 2px 4px;
+      border-radius: 4px; transition: color 0.15s, background 0.15s; flex-shrink: 0;
+    }
+    .history-delete-btn:hover { color: #c0392b; background: rgba(192,57,43,0.08); }
     .history-copy-btn {
       padding: 4px 12px; background: transparent;
       border: 1px solid var(--border); color: var(--muted);
@@ -740,17 +746,7 @@
 
     document.getElementById("results-topic-label").textContent = `Generated: ${data.topic}`;
 
-    // Source link — from first post
-    const srcLink = document.getElementById("source-link");
     const p0 = allPosts[0] || {};
-    if (p0.source_url && p0.source_url !== "#") {
-      srcLink.href        = p0.source_url;
-      srcLink.textContent = p0.source_title ? `Source: ${truncate(p0.source_title, 60)}` : "View source";
-      srcLink.style.display = "inline";
-    } else {
-      srcLink.style.display = "none";
-    }
-
     renderTopicSwitchNotice(data);
     renderSourcesSection(data.serper_sources || [], data.serper_error || "", p0.source_verified || false);
 
@@ -776,6 +772,16 @@
 
     document.getElementById("post-body-text").value = p.post_body || "";
     document.getElementById("hashtags-text").value  = (p.hashtags || []).join("\n");
+
+    // Update source link to match the currently displayed post
+    const srcLink = document.getElementById("source-link");
+    if (p.source_url && p.source_url !== "#") {
+      srcLink.href        = p.source_url;
+      srcLink.textContent = p.source_title ? `Source: ${truncate(p.source_title, 60)}` : "View source";
+      srcLink.style.display = "inline";
+    } else {
+      srcLink.style.display = "none";
+    }
 
     const nav = document.getElementById("post-nav");
     if (allPosts.length > 1) {
@@ -935,6 +941,7 @@
              </div>`
           : "";
 
+        const entryId = entry.id || "";
         return `
           <div class="history-entry" id="hentry-${idx}">
             <div class="history-entry-header" onclick="toggleEntry(${idx})">
@@ -947,6 +954,7 @@
               </div>
               <div class="history-entry-right">
                 ${hasBody?`<button class="history-copy-btn" onclick="copyHistoryEntry(event,this,${idx})">Copy</button>`:""}
+                <button class="history-delete-btn" onclick="deleteHistoryEntry(event,'${entryId}',${idx})" title="Delete this post">✕</button>
                 <span class="expand-arrow" id="arrow-${idx}">&#9660;</span>
               </div>
             </div>
@@ -973,6 +981,26 @@
       btn.textContent = "Copied!"; btn.classList.add("copied");
       setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000);
     });
+  }
+
+  async function deleteHistoryEntry(event, entryId, idx) {
+    event.stopPropagation();
+    if (!confirm("Delete this post from history? This cannot be undone.")) return;
+    try {
+      const resp = await fetch(`/history/${entryId}`, { method: "DELETE" });
+      const data = await resp.json();
+      if (!data.success) throw new Error(data.error || "Delete failed.");
+      // Remove from DOM immediately
+      const el = document.getElementById(`hentry-${idx}`);
+      if (el) el.remove();
+      // Update count label
+      const remaining = document.querySelectorAll(".history-entry").length;
+      const label = document.getElementById("history-count-label");
+      if (label) label.textContent = `${remaining} post${remaining !== 1 ? "s" : ""} generated`;
+      if (remaining === 0) document.getElementById("history-panel").style.display = "none";
+    } catch (err) {
+      alert("Could not delete: " + err.message);
+    }
   }
 
   // ── Copy helpers ──────────────────────────────────────────────────────────────

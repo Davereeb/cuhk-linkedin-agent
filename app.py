@@ -9,7 +9,7 @@ import requests
 import dashscope
 from dashscope import ImageSynthesis
 from urllib.parse import quote as url_quote
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, jsonify, request
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -1178,10 +1178,11 @@ def generate():
         # ── Step 4: Save each post as a separate history entry ────────────────
         for p in posts:
             log.append({
+                "id":                 uuid.uuid4().hex,
                 "topic":              topic,
                 "mode":               mode,
                 "kol_name":           None if p["style"] == "Original" else p["style"],
-                "date":               datetime.now().isoformat(),
+                "date":               datetime.now(timezone.utc).isoformat(),
                 "post_body":          p["post_body"],
                 "hashtags":           p["hashtags"],
                 "image_url":          image_url,
@@ -1219,6 +1220,16 @@ def generate():
 def history():
     log = load_log()
     return jsonify(list(reversed(log)))
+
+
+@app.route("/history/<entry_id>", methods=["DELETE"])
+def delete_history_entry(entry_id):
+    log = load_log()
+    new_log = [e for e in log if e.get("id") != entry_id]
+    if len(new_log) == len(log):
+        return jsonify({"success": False, "error": "Entry not found."}), 404
+    save_log(new_log)
+    return jsonify({"success": True})
 
 
 # ── Custom style routes ────────────────────────────────────────────────────────
